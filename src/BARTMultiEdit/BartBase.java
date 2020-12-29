@@ -53,7 +53,7 @@ public abstract class BartBase {
 
     abstract void initializeSigmaSq();
 
-    abstract double[] getPredictionsFromGibbsTreeSamples(double[] record);
+    public abstract double getPredictionsFromGibbsTreeSamples(double[] record);
 
     abstract double[] getInSamplePredictionToCurrentIteration();
 

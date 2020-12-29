@@ -7,9 +7,9 @@ import java.util.Random;
 
 public class Hyperparam {
 
-    enum MHMode { OneStep, MultiStep }
+    public enum MHMode { OneStep, MultiStep }
 
-    enum VerboseLevel { NoReporting, ReportLoss, ReportDetails}
+    public enum VerboseLevel { NoReporting, ReportLoss, ReportDetails}
 
     /** random seed */
     protected final int seed;

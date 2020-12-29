@@ -1,0 +1,5 @@
+*.class
+*.csv
+/lib/*.jar
+/out/
+/.idea

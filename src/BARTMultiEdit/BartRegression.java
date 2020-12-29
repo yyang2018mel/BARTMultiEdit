@@ -17,19 +17,20 @@ public class BartRegression extends BartBase {
     }
 
     @Override
-    double[] getPredictionsFromGibbsTreeSamples(double[] record) {
+    public double getPredictionsFromGibbsTreeSamples(double[] record) {
 
         int num_post_burn_in = hyperParam.numGibbsTotal - hyperParam.numGibbsBurnin;
         double[] y_gibbs_samples = new double[num_post_burn_in];
-        for (int g = hyperParam.numGibbsBurnin+1; g < hyperParam.numGibbsTotal; g++) {
+        for (int g = hyperParam.numGibbsBurnin; g < hyperParam.numGibbsTotal; g++) {
             var bart_trees = gibbsSamplesOfTrees[g];
             double yt_g = 0;
             for (var tree : bart_trees) {
                 yt_g += tree.getPredictionForData(record);
             }
-            y_gibbs_samples[g] = dataContext.restoreYForRegression(yt_g);
+            y_gibbs_samples[g - hyperParam.numGibbsBurnin] = dataContext.restoreYForRegression(yt_g);
         }
-        return y_gibbs_samples;
+        var pred = StatToolbox.sample_average(y_gibbs_samples);
+        return pred;
 
     }
 
