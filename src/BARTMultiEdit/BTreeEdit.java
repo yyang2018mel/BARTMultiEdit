@@ -164,7 +164,20 @@ public class BTreeEdit {
         return new Pair<>(proposal_tree, log_forward_backward);
     }
 
-    static Pair<BTreeNode, double[]> performMultiStepRandomWalk(Random rand, BTreeNode current_tree_cached, BTreeNode proposal_tree, int stride, double[] responses) {
-        return new Pair<>(current_tree_cached, new double[]{0.,0.});
+    static Pair<BTreeNode, double[]> performMultiStepRandomWalk(Random rand, BTreeNode current_tree_cached, BTreeNode proposal_tree, int mean_stride, double[] responses) {
+        var log_forward_backward = new double[2];
+        var current_tree = current_tree_cached.clone();
+
+        var stride = StatToolbox.sample_poisson(mean_stride);
+        var edits = "";
+
+        for (int i = 0; i < stride; i++) {
+            var one_step_result = performOneStepRandomWalk(rand, current_tree, proposal_tree, responses);
+            current_tree = one_step_result.getValue0();
+            proposal_tree = current_tree.clone();
+            log_forward_backward = VectorTools.add_arrays(log_forward_backward, one_step_result.getValue1());
+        }
+
+        return new Pair<>(current_tree, log_forward_backward);
     }
 }
