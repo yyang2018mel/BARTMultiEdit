@@ -16,7 +16,7 @@ public class Hyperparam {
     /** mode to do MH tree modifying: OneStep, MultiStep */
     protected final MHMode mhMode;
     /** only used when mhMode == MultiStep */
-    protected final int meanStride;
+    protected final double meanStride;
     /** the number of trees in a vBART model */
     protected int T;
     /** how many total Gibbs samples in a BART model creation */
@@ -51,7 +51,7 @@ public class Hyperparam {
     protected static final double YminAndYmaxHalfDiff = 0.5;
 
     public Hyperparam(int seed, int T, int num_gibbs_total, int num_gibbs_burnin, MHMode mhMode,
-                      int meanStride, boolean classification, double alpha, double beta, double k, double nu, double q,
+                      double meanStride, boolean classification, double alpha, double beta, double k, double nu, double q,
                       double prob_insert, double prob_delete, VerboseLevel verbose) {
         this.seed = seed;
         this.T = T;

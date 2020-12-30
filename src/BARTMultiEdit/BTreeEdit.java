@@ -164,7 +164,7 @@ public class BTreeEdit {
         return new Pair<>(proposal_tree, log_forward_backward);
     }
 
-    static Pair<BTreeNode, double[]> performMultiStepRandomWalk(Random rand, BTreeNode current_tree_cached, BTreeNode proposal_tree, int mean_stride, double[] responses) {
+    static Pair<BTreeNode, double[]> performMultiStepRandomWalk(Random rand, BTreeNode current_tree_cached, BTreeNode proposal_tree, double mean_stride, double[] responses) {
         var log_forward_backward = new double[2];
         var current_tree = current_tree_cached.clone();
 

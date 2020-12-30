@@ -199,7 +199,7 @@ public class StatToolbox {
         return max;
     }
 
-    public static int sample_poisson(int mean) {
+    public static int sample_poisson(double mean) {
         var poisson = new PoissonDistribution(mean);
         return poisson.sample();
     }
