@@ -126,8 +126,8 @@ public class BTreeNode {
                 result.add(this);
             return result;
         }
-        var left_leaves = this.left.getTerminalsBelowInclusive();
-        var right_leaves = this.right.getTerminalsBelowInclusive();
+        var left_leaves = this.left.getTerminalsBelowInclusiveWithDataGEqN(n);
+        var right_leaves = this.right.getTerminalsBelowInclusiveWithDataGEqN(n);
         result.addAll(left_leaves);
         result.addAll(right_leaves);
         return result;
