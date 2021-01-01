@@ -14,7 +14,7 @@ public class BartRegressionTest {
         try {
             var context = DataUtils.readCsv(new File("datasets", "r_rand.csv"), true, true);
             var params = new Hyperparam(2020, 50, 2000, 100, Hyperparam.MHMode.OneStep,
-                                        0, false, .95, 2., 2., 3., .9, .3, .3,
+                                        2, false, .95, 2., 2., 3., .9, .3, .3,
                                          Hyperparam.VerboseLevel.NoReporting);
             var bart = new BartRegression(params, context);
             bart.initialize();
@@ -23,7 +23,5 @@ public class BartRegressionTest {
         catch (Exception e) {
             System.out.println(e.getMessage());
         }
-
-
     }
 }

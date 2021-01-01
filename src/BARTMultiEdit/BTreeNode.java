@@ -136,7 +136,7 @@ public class BTreeNode {
     /**
      * Populate data to each node below (inclusive) and update depth of each node
      * */
-    boolean tryPopulateDateAndDepth(double[] responses_from_root) {
+    boolean tryPopulateDataAndDepth(double[] responses_from_root) {
 
         var X = this.dataContext.X;
 
@@ -168,8 +168,8 @@ public class BTreeNode {
             this.left.responses = left_indices.stream().mapToDouble(i -> responses_from_root[i]).toArray();
             this.right.dataIndices = right_indices.stream().mapToInt(i -> i).toArray();
             this.right.responses = right_indices.stream().mapToDouble(i -> responses_from_root[i]).toArray();
-            var leftOutcome = this.left.tryPopulateDateAndDepth(responses_from_root);
-            var rightOutcome= this.right.tryPopulateDateAndDepth(responses_from_root);
+            var leftOutcome = this.left.tryPopulateDataAndDepth(responses_from_root);
+            var rightOutcome= this.right.tryPopulateDataAndDepth(responses_from_root);
             return leftOutcome && rightOutcome;
         }
 
@@ -224,7 +224,10 @@ public class BTreeNode {
     double[] getPossibleSplitsOfPredictorAtNode(int predictor) {
         double[][] X_by_col = this.dataContext.XByColumn;
         double[] x_dot_j = X_by_col[predictor];
-        double[] x_dot_j_under_node = Arrays.stream(dataIndices).mapToDouble(idx -> x_dot_j[idx]).toArray();
+//        double[] x_dot_j_under_node = Arrays.stream(dataIndices).mapToDouble(idx -> x_dot_j[idx]).toArray();
+        double[] x_dot_j_under_node = new double[dataIndices.length];
+        for(int i = 0; i < dataIndices.length; i++)
+            x_dot_j_under_node[i] = x_dot_j[dataIndices[i]];
 
         TDoubleHashSetAndArray unique_x_dot_j_node = new TDoubleHashSetAndArray(x_dot_j_under_node);
         double max = VectorTools.max(x_dot_j_under_node);
@@ -404,7 +407,7 @@ public class BTreeNode {
             rand_root = new BTreeNode(context, bartParams, rand_decision);
             rand_root.left = new BTreeNode(rand_root);
             rand_root.right = new BTreeNode(rand_root);
-        } while(!rand_root.tryPopulateDateAndDepth(context.yTransformed));
+        } while(!rand_root.tryPopulateDataAndDepth(context.yTransformed));
 
         return rand_root;
     }

@@ -80,7 +80,7 @@ public class BTreeEdit {
         grow_node.mu = null;
         grow_node.left = new BTreeNode(grow_node); // make as terminal node
         grow_node.right = new BTreeNode(grow_node); // make as terminal node
-        if (grow_node.tryPopulateDateAndDepth(responses)) {
+        if (grow_node.tryPopulateDataAndDepth(responses)) {
             double log_forward_prob = BTreeProb.calculateLogGrowProbability(current_tree_cached, grow_node);
             double log_backward_prob = BTreeProb.calculateLogPruneProbability(proposal_tree);
             return new double[] {log_forward_prob, log_backward_prob};
@@ -108,7 +108,7 @@ public class BTreeEdit {
         change_node.isTerminal = false;
         change_node.left = new BTreeNode(change_node);
         change_node.right = new BTreeNode(change_node);
-        if (change_node.tryPopulateDateAndDepth(responses)) {
+        if (change_node.tryPopulateDataAndDepth(responses)) {
             double log_forward_prob = BTreeProb.calculateLogChangeProbability(current_tree_cached, change_node, prob_change);
             double log_backward_prob = BTreeProb.calculateLogChangeProbability(proposal_tree, change_node_cached, prob_change);
             return new double[] {log_forward_prob, log_backward_prob};
@@ -127,7 +127,7 @@ public class BTreeEdit {
 
         // do the pruning
         prune_node.descendToTerminalNode();
-        if (prune_node.tryPopulateDateAndDepth(responses)) {
+        if (prune_node.tryPopulateDataAndDepth(responses)) {
             double log_forward_prob = BTreeProb.calculateLogPruneProbability(current_tree_cached);
             double log_backward_prob = BTreeProb.calculateLogGrowProbability(proposal_tree, prune_node_cached);
             return new double[] {log_forward_prob, log_backward_prob};
@@ -138,7 +138,6 @@ public class BTreeEdit {
 
     static Pair<BTreeNode, double[]> performOneStepRandomWalk(Random rand, BTreeNode current_tree_cached, BTreeNode proposal_tree, double[] responses) {
 
-        var non_terminals_count = current_tree_cached.getNonTerminalsBelowInclusive().size();
         var log_forward_backward = new double[2];
 
         // 1. randomly choose an Edit step based on unconditional probability of Edits
