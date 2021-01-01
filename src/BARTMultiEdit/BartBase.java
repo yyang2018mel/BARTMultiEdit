@@ -2,6 +2,8 @@ package BARTMultiEdit;
 
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Random;
 
 public abstract class BartBase {
@@ -37,6 +39,7 @@ public abstract class BartBase {
     }
 
     public void doGibbsSampling(){
+        var start_time = Instant.now();
         while (currentGibbsIteration <= hyperParam.numGibbsTotal){
             doOneGibbsSampling();
             for(var tree : gibbsSamplesOfTrees[currentGibbsIteration-1])
@@ -49,6 +52,9 @@ public abstract class BartBase {
 
             currentGibbsIteration++;
         }
+        var end_time = Instant.now();
+        var training_duration = Duration.between(start_time, end_time).toSeconds();
+        System.out.println(String.format("Total training time: %d seconds", training_duration));
     }
 
     abstract void initializeSigmaSq();
@@ -84,7 +90,7 @@ public abstract class BartBase {
         var log_forward_backward = proposal.getValue1();
         var log_transition_ratio = log_forward_backward[1] - log_forward_backward[0];
 
-        if(proposal_tree != null && proposal_tree.tryPopulateDateAndDepth(R_minus_j)) {
+        if(proposal_tree != null && proposal_tree.tryPopulateDataAndDepth(R_minus_j)) {
             var log_likelihood_ratio = BTreeProb.getTreeLogLikelihoodRatio(proposal_tree, old_tree, σ_sq, hyperParam.σ_mu_sq);
             var log_structure_ratio = BTreeProb.getTreeStructureLogRatio(proposal_tree, old_tree);
             var log_metropolis_ratio = log_likelihood_ratio + log_transition_ratio + log_structure_ratio;
@@ -98,7 +104,7 @@ public abstract class BartBase {
         }
 
         this.acceptRejectMH[gibbs_iter][tree_idx] = false;
-        copy_of_tree.tryPopulateDateAndDepth(R_minus_j); // must succeed as the old tree has a valid structure
+        copy_of_tree.tryPopulateDataAndDepth(R_minus_j); // must succeed as the old tree has a valid structure
         return copy_of_tree;
     }
 
