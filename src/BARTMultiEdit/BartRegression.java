@@ -17,54 +17,42 @@ public class BartRegression extends BartBase {
     }
 
     @Override
-    public double getPredictionsFromGibbsTreeSamples(double[] record) {
+    public double[] getPredictionsFromGibbsTreeSamples(double[][] records, boolean till_current_iteration) {
+        int iteration_end = till_current_iteration ? currentGibbsIteration : hyperParam.numGibbsTotal;
+        int num_post_burn_in = iteration_end - hyperParam.numGibbsBurnin;
+        int n = records.length;
+        double[] result = new double[n];
 
-        int num_post_burn_in = hyperParam.numGibbsTotal - hyperParam.numGibbsBurnin;
-        double[] y_gibbs_samples = new double[num_post_burn_in];
-        for (int g = hyperParam.numGibbsBurnin; g < hyperParam.numGibbsTotal; g++) {
+        if (num_post_burn_in <= 0) {
+            System.out.println("BART model still in burn-in period; returning 0-vector.");
+            return result;
+        }
+
+        double[][] ys_trans_gibbs_sample = new double[num_post_burn_in][n];
+        for(int g = hyperParam.numGibbsBurnin; g < iteration_end; g++) {
+            double[] preds_trans_g = new double[n];
             var bart_trees = gibbsSamplesOfTrees[g];
-            double yt_g = 0;
-            for (var tree : bart_trees) {
-                yt_g += tree.getPredictionForData(record);
+            for(var tree : bart_trees) {
+                for(int i = 0; i < n; i++) {
+                    var record = records[i];
+                    preds_trans_g[i] += tree.getPredictionForData(record);
+                }
             }
-            y_gibbs_samples[g - hyperParam.numGibbsBurnin] = dataContext.restoreYForRegression(yt_g);
-        }
-        var pred = StatToolbox.sample_average(y_gibbs_samples);
-        return pred;
-
-    }
-
-    @Override
-    double[] getInSamplePredictionToCurrentIteration() {
-        int num_post_burnin_to_current = currentGibbsIteration - hyperParam.numGibbsBurnin;
-        if (num_post_burnin_to_current <= 0) {
-            return new double[dataContext.N];
+            ys_trans_gibbs_sample[g-hyperParam.numGibbsBurnin] = preds_trans_g;
         }
 
-        double[][] ys_gibbs_sample = new double[num_post_burnin_to_current][dataContext.N];
-        double[] ys_insample_avg = new double[dataContext.N];
+        var ys_trans_gibbs_sample_T = VectorTools.transformMatrix(ys_trans_gibbs_sample);
+        for(int i = 0; i < n; i++) {
+            result[i] = dataContext.restoreYForRegression(
+                        StatToolbox.sample_average(ys_trans_gibbs_sample_T[i]));
+        }
 
-        for(int g = hyperParam.numGibbsBurnin; g < currentGibbsIteration; g++) {
-            var bart_trees = gibbsSamplesOfTrees[g];
-            double[] ys_g = new double[dataContext.N];
-            for (var tree : bart_trees) {
-                var tree_predictions = new double[dataContext.N];
-                for(int i = 0; i < dataContext.N; i++)
-                    tree_predictions[i] = tree.getPrediction(dataContext.X[i]);
-                ys_g = VectorTools.add_arrays(ys_g, tree_predictions);
-            }
-            ys_gibbs_sample[g-hyperParam.numGibbsBurnin] = Arrays.stream(ys_g).map(v -> dataContext.restoreYForRegression(v)).toArray();
-        }
-        var ys_gibbs_sample_T = VectorTools.transformMatrix(ys_gibbs_sample);
-        for(int i = 0; i < dataContext.N; i++) {
-            ys_insample_avg[i] = StatToolbox.sample_average(ys_gibbs_sample_T[i]);
-        }
-        return ys_insample_avg;
+        return result;
     }
 
     @Override
     double getInSampleLossToCurrentIteration() {
-        var insample_predictions = getInSamplePredictionToCurrentIteration();
+        var insample_predictions = getPredictionsFromGibbsTreeSamples(dataContext.X, true);
         var l2 = (IntStream.range(0, dataContext.N).boxed()
                 .mapToDouble(i -> Math.pow(insample_predictions[i]-dataContext.y[i], 2))
                 .sum())/ dataContext.N;

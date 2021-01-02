@@ -45,23 +45,26 @@ public abstract class BartBase {
             for(var tree : gibbsSamplesOfTrees[currentGibbsIteration-1])
                 tree.flushBartData();
 
-            if(currentGibbsIteration % 100 == 0) {
-                var loss_so_far = this.getInSampleLossToCurrentIteration();
-                System.out.println(String.format("Iteration: %d\tInSample Loss: %2f", currentGibbsIteration, loss_so_far));
+            if(hyperParam.verbose == Hyperparam.VerboseLevel.ReportLoss) {
+                if (currentGibbsIteration % 100 == 0) {
+                    var loss_so_far = this.getInSampleLossToCurrentIteration();
+                    System.out.println(String.format("Iteration: %d\tInSample Loss: %2f", currentGibbsIteration, loss_so_far));
+                }
             }
 
             currentGibbsIteration++;
         }
         var end_time = Instant.now();
         var training_duration = Duration.between(start_time, end_time).toSeconds();
-        System.out.println(String.format("Total training time: %d seconds", training_duration));
+
+        var loss = this.getInSampleLossToCurrentIteration();
+        System.out.println(String.format("InSample Loss:  %2f", loss));
+        System.out.println(String.format("Total Gibbs sampling time: %d seconds", training_duration));
     }
 
     abstract void initializeSigmaSq();
 
-    public abstract double getPredictionsFromGibbsTreeSamples(double[] record);
-
-    abstract double[] getInSamplePredictionToCurrentIteration();
+    public abstract double[] getPredictionsFromGibbsTreeSamples(double[][] records, boolean till_current_iteration);
 
     abstract double getInSampleLossToCurrentIteration();
 
@@ -90,7 +93,7 @@ public abstract class BartBase {
         var log_forward_backward = proposal.getValue1();
         var log_transition_ratio = log_forward_backward[1] - log_forward_backward[0];
 
-        if(proposal_tree != null && proposal_tree.tryPopulateDataAndDepth(R_minus_j)) {
+        if(proposal_tree != null && proposal_tree.tryUpdateResponses(R_minus_j)) {
             var log_likelihood_ratio = BTreeProb.getTreeLogLikelihoodRatio(proposal_tree, old_tree, σ_sq, hyperParam.σ_mu_sq);
             var log_structure_ratio = BTreeProb.getTreeStructureLogRatio(proposal_tree, old_tree);
             var log_metropolis_ratio = log_likelihood_ratio + log_transition_ratio + log_structure_ratio;

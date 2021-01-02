@@ -178,6 +178,27 @@ public class BTreeNode {
 
     }
 
+    boolean tryUpdateResponses(double[] responses_from_root) {
+
+        if(this.isTerminal && this.dataIndices != null && this.dataIndices.length != 0) {
+            return true;
+        }
+
+        if(this.parent == null)
+            this.responses = responses_from_root;
+
+        if(this.left.dataIndices.length > 0 && this.right.dataIndices.length > 0) {
+            this.left.responses = Arrays.stream(this.left.dataIndices).mapToDouble(i -> responses_from_root[i]).toArray();
+            this.right.responses = Arrays.stream(this.right.dataIndices).mapToDouble(i -> responses_from_root[i]).toArray();
+            var leftOutcome = this.left.tryUpdateResponses(responses_from_root);
+            var rightOutcome = this.right.tryUpdateResponses(responses_from_root);
+            return leftOutcome && rightOutcome;
+        }
+
+        return false;
+
+    }
+
     /**
      * Return the list of prunable/changable nodes below this (non-terminal) node inclusive
      * Namely, non-terminal nodes with both left and right being terminal
@@ -327,11 +348,6 @@ public class BTreeNode {
                 : this.right.getPredictionForData(record));
     }
 
-    double getPrediction(double[] record) {
-        var record_node = this.locateNodeForData(record);
-        return record_node.mu;
-    }
-
     /**
      * Creates a cloned copy of the tree beginning at this node by recursively cloning its children.
      * */
@@ -356,15 +372,6 @@ public class BTreeNode {
         }
 
         return copy;
-    }
-
-    private BTreeNode locateNodeForData(double[] record) {
-        if (this.isTerminal) return this;
-        var node_feature_index = this.decision.featureIndex;
-        var node_split_value = this.decision.splitValue;
-        return ((record[node_feature_index] <= node_split_value)
-                ? this.left.locateNodeForData(record)
-                : this.right.locateNodeForData(record));
     }
 
     private double avgResponse(){
