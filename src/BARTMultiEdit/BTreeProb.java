@@ -27,7 +27,7 @@ public class BTreeProb {
     static double calculateLogGrowProbability(BTreeNode tree_grown_from, BTreeNode grow_node) {
         int b = tree_grown_from.getTerminalsBelowInclusive().size();
         double prob_grow = tree_grown_from.IsStump() ? 1. : tree_grown_from.bartParams.probGrow;
-        double p_adj = grow_node.getPredictorsThatCouldBeUsedToSplitAtNode().size();
+        double p_adj = grow_node.predictorsAvailable.length;
         double n_adj = grow_node.getPossibleSplitsOfPredictorAtNode(grow_node.decision.featureIndex).length;
         double log_prob = 4.*Math.log(1.) - Math.log(prob_grow) - Math.log(b) -Math.log(p_adj) - Math.log(n_adj);
         return log_prob;
@@ -42,7 +42,7 @@ public class BTreeProb {
 
     static double calculateLogChangeProbability(BTreeNode tree_changed_from, BTreeNode change_node, double prob_change) {
         var b = tree_changed_from.getPrunableAndChangeablesBelowInclusive().size();
-        var p_adj = change_node.getPredictorsThatCouldBeUsedToSplitAtNode().size();
+        var p_adj = change_node.predictorsAvailable.length;
         var n_adj = change_node.getPossibleSplitsOfPredictorAtNode(change_node.decision.featureIndex).length;
         double log_prob = 4*Math.log(1.) - Math.log(prob_change) - Math.log(b) -Math.log(p_adj) - Math.log(n_adj);
         return log_prob;

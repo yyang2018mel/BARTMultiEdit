@@ -31,7 +31,7 @@ public class BTreeEdit {
         BTreeNode growth_node = growth_nodes.get((int)Math.floor(rand.nextDouble() * growth_nodes.size()));
 
         //do check b
-        if (growth_node.getPredictorsThatCouldBeUsedToSplitAtNode().size() == 0){
+        if (growth_node.predictorsAvailable.length == 0){
             return null;
         }
         //if we passed, we can use this node
@@ -91,8 +91,7 @@ public class BTreeEdit {
     static double[] doMHChangeAndCalculateLnR(Random rand, BTreeNode current_tree_cached, BTreeNode proposal_tree, double prob_change, double[] responses) {
         // first select a node that can be changed
         var change_node = pickPruneOrChangeNode(rand, proposal_tree);
-        var change_node_cached = new BTreeNode(change_node.parent, change_node.decision);
-        change_node_cached.dataIndices = change_node.dataIndices;
+        var change_node_cached = change_node.clone();
         var void_result = new double[] { Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY };
 
         // now start the change process
@@ -120,8 +119,7 @@ public class BTreeEdit {
     static double[] doMHPruneAndCalculateLnR(Random rand, BTreeNode current_tree_cached, BTreeNode proposal_tree, double prob_grow, double prob_prune, double[] responses) {
         // first select a node that can be pruned
         var prune_node = pickPruneOrChangeNode(rand, proposal_tree);
-        var prune_node_cached = new BTreeNode(prune_node.parent, prune_node.decision);
-        prune_node_cached.dataIndices = prune_node.dataIndices;
+        var prune_node_cached = prune_node.clone();
 
         var void_result = new double[] { Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY };
 
