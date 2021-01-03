@@ -18,6 +18,7 @@ public class BTreeNode {
     Decision decision;
     int[] dataIndices;
     int[] predictorsAvailable;
+    Hashtable<Integer, double[]> splitsAvailable;
     double[] responses;
 
     /**
@@ -80,6 +81,7 @@ public class BTreeNode {
     void flushBartData() {
         this.dataIndices = null;
         this.predictorsAvailable = null;
+        this.splitsAvailable = null;
         this.responses = null;
         this.dataContext = null;
         if(this.left != null)
@@ -146,6 +148,12 @@ public class BTreeNode {
             if(this.predictorsAvailable == null)
                 this.predictorsAvailable = this.getPredictorsThatCouldBeUsedToSplitAtNode()
                                            .stream().mapToInt(i -> i).toArray();
+
+            if(this.splitsAvailable == null) {
+                this.splitsAvailable = new Hashtable<>();
+                for(var predictor : this.predictorsAvailable)
+                    splitsAvailable.put(predictor, this.getPossibleSplitsOfPredictorAtNode(predictor));
+            }
             return true;
         }
 
@@ -171,6 +179,12 @@ public class BTreeNode {
         if(this.predictorsAvailable == null)
             this.predictorsAvailable = this.getPredictorsThatCouldBeUsedToSplitAtNode()
                                        .stream().mapToInt(i -> i).toArray();
+
+        if(this.splitsAvailable == null) {
+            this.splitsAvailable = new Hashtable<>();
+            for(var predictor : this.predictorsAvailable)
+                splitsAvailable.put(predictor, this.getPossibleSplitsOfPredictorAtNode(predictor));
+        }
 
         if(left_indices.size() > 0 && right_indices.size() > 0) {
             this.left.dataIndices = left_indices.stream().mapToInt(i -> i).toArray();
@@ -296,7 +310,7 @@ public class BTreeNode {
      * Return a split value that can be used to do splitting via the given feature at this node
      * */
     double pickRandomSplitValue(Random rand, int feature_index) {
-        var split_values = getPossibleSplitsOfPredictorAtNode(feature_index);
+        var split_values = this.splitsAvailable.get(feature_index);
         if (split_values.length == 0){
             return Double.NaN;
         }
@@ -321,7 +335,7 @@ public class BTreeNode {
         if (isTerminal) return Double.NaN;
         var p_adj = this.predictorsAvailable.length;
         var j = decision.featureIndex;
-        var nj_adj = this.getPossibleSplitsOfPredictorAtNode(j).length;
+        var nj_adj = this.splitsAvailable.get(j).length;
         var p_rule = (1. / p_adj) * (1. / nj_adj);
         return p_rule;
     }
@@ -370,6 +384,7 @@ public class BTreeNode {
         copy.decision = decision;
         copy.dataIndices = dataIndices;
         copy.predictorsAvailable = predictorsAvailable;
+        copy.splitsAvailable = splitsAvailable;
         copy.depth = depth;
         copy.mu = mu;
         if(this.left != null) {
