@@ -48,7 +48,7 @@ public abstract class BartBase {
             if(hyperParam.verbose == Hyperparam.VerboseLevel.ReportLoss) {
                 if (currentGibbsIteration % 100 == 0) {
                     var loss_so_far = this.getInSampleLossToCurrentIteration();
-                    System.out.println(String.format("Iteration: %d\tInSample Loss: %2f", currentGibbsIteration, loss_so_far));
+                    System.out.printf("Iteration: %d\tInSample Loss: %2f%n", currentGibbsIteration, loss_so_far);
                 }
             }
 
@@ -58,8 +58,8 @@ public abstract class BartBase {
         var training_duration = Duration.between(start_time, end_time).toSeconds();
 
         var loss = this.getInSampleLossToCurrentIteration();
-        System.out.println(String.format("InSample Loss:  %2f", loss));
-        System.out.println(String.format("Total Gibbs sampling time: %d seconds", training_duration));
+        System.out.printf("InSample Loss:  %2f%n", loss);
+        System.out.printf("Total Gibbs sampling time: %d seconds%n", training_duration);
     }
 
     abstract void initializeSigmaSq();
@@ -174,13 +174,11 @@ public abstract class BartBase {
 
             // TODO - we need to process X and y (probably by omitting) such that
             //  X_for_regression does not have any missing value
-            var X_for_regression = X;
             var y_trans_for_regression = y_trans;
             var reg = new OLSMultipleLinearRegression();
-            reg.newSampleData(y_trans_for_regression, X_for_regression);
+            reg.newSampleData(y_trans_for_regression, X);
             var residuals = reg.estimateResiduals();
-            var mse = StatToolbox.sample_variance(residuals);
-            return mse;
+            return StatToolbox.sample_variance(residuals);
         }
 
         // otherwise (the rare cases)
