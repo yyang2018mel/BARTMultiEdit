@@ -1,5 +1,7 @@
 package BARTMultiEdit;
 
+import java.util.ArrayList;
+
 public class BTreeProb {
 
     static double getTreeStructureLogProbability(BTreeNode root) {

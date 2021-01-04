@@ -1,6 +1,7 @@
 package BARTMultiEdit;
 
 import OpenSourceExtensions.TDoubleHashSetAndArray;
+import org.javatuples.Pair;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -145,40 +146,57 @@ public class BTreeNode {
         var X = this.dataContext.X;
 
         if(this.isTerminal && this.dataIndices != null && this.dataIndices.length != 0) {
-            if(this.predictorsAvailable == null)
-                this.predictorsAvailable = this.getPredictorsThatCouldBeUsedToSplitAtNode()
-                                           .stream().mapToInt(i -> i).toArray();
+            if (this.predictorsAvailable == null) {
+                var possible_rules = this.getPredictorsThatCouldBeUsedToSplitAtNode();
+                var num_possible_rules = possible_rules.getValue1();
+                this.predictorsAvailable = new int[num_possible_rules];
+                for(int i = 0; i < num_possible_rules; i++)
+                    this.predictorsAvailable[i] = possible_rules.getValue0().get(i);
+            }
 
             if(this.splitsAvailable == null) {
                 this.splitsAvailable = new Hashtable<>();
                 for(var predictor : this.predictorsAvailable)
                     splitsAvailable.put(predictor, this.getPossibleSplitsOfPredictorAtNode(predictor));
             }
+
             return true;
         }
 
         if(this.parent == null) {
             this.depth = 0;
-            this.dataIndices = IntStream.range(0, X.length).toArray();
+            this.dataIndices = new int[X.length];
+            for(int i = 0; i < X.length; i++)
+                this.dataIndices[i] = i;
             this.responses = responses_from_root;
         }
 
         var split_feature_index = decision.featureIndex;
         var split_value = decision.splitValue;
+        int left_size = 0;
+        int right_size = 0;
         var left_indices = new ArrayList<Integer>();
         var right_indices = new ArrayList<Integer>();
 
         for(int idx : this.dataIndices) {
             double[] datum = X[idx];
-            if(datum[split_feature_index] <= split_value)
+            if(datum[split_feature_index] <= split_value) {
                 left_indices.add(idx);
-            else
+                left_size++;
+            }
+            else {
                 right_indices.add(idx);
+                right_size++;
+            }
         }
 
-        if(this.predictorsAvailable == null)
-            this.predictorsAvailable = this.getPredictorsThatCouldBeUsedToSplitAtNode()
-                                       .stream().mapToInt(i -> i).toArray();
+        if (this.predictorsAvailable == null) {
+            var possible_rules = this.getPredictorsThatCouldBeUsedToSplitAtNode();
+            var num_possible_rules = possible_rules.getValue1();
+            this.predictorsAvailable = new int[num_possible_rules];
+            for(int i = 0; i < num_possible_rules; i++)
+                this.predictorsAvailable[i] = possible_rules.getValue0().get(i);
+        }
 
         if(this.splitsAvailable == null) {
             this.splitsAvailable = new Hashtable<>();
@@ -187,10 +205,21 @@ public class BTreeNode {
         }
 
         if(left_indices.size() > 0 && right_indices.size() > 0) {
-            this.left.dataIndices = left_indices.stream().mapToInt(i -> i).toArray();
-            this.left.responses = left_indices.stream().mapToDouble(i -> responses_from_root[i]).toArray();
-            this.right.dataIndices = right_indices.stream().mapToInt(i -> i).toArray();
-            this.right.responses = right_indices.stream().mapToDouble(i -> responses_from_root[i]).toArray();
+            this.left.dataIndices = new int[left_size];
+            this.left.responses = new double[left_size];
+            for(int i = 0; i < left_size; i++) {
+                int idx = left_indices.get(i);
+                this.left.dataIndices[i] = idx;
+                this.left.responses[i] = responses_from_root[idx];
+            }
+
+            this.right.dataIndices = new int[right_size];
+            this.right.responses = new double[right_size];
+            for(int i = 0; i < right_size; i++) {
+                int idx = right_indices.get(i);
+                this.right.dataIndices[i] = idx;
+                this.right.responses[i] = responses_from_root[idx];
+            }
             var leftOutcome = this.left.tryPopulateDataAndDepth(responses_from_root);
             var rightOutcome= this.right.tryPopulateDataAndDepth(responses_from_root);
             return leftOutcome && rightOutcome;
@@ -211,8 +240,16 @@ public class BTreeNode {
             this.responses = responses_from_root;
 
         if(this.left.dataIndices.length > 0 && this.right.dataIndices.length > 0) {
-            this.left.responses = Arrays.stream(this.left.dataIndices).mapToDouble(i -> responses_from_root[i]).toArray();
-            this.right.responses = Arrays.stream(this.right.dataIndices).mapToDouble(i -> responses_from_root[i]).toArray();
+            this.left.responses = new double[this.left.dataIndices.length];
+            this.right.responses = new double[this.right.dataIndices.length];
+            for(int i = 0; i < this.left.dataIndices.length; i++) {
+                int idx = this.left.dataIndices[i];
+                this.left.responses[i] = responses_from_root[idx];
+            }
+            for(int i = 0; i < this.right.dataIndices.length; i++) {
+                int idx = this.right.dataIndices[i];
+                this.right.responses[i] = responses_from_root[idx];
+            }
             var leftOutcome = this.left.tryUpdateResponses(responses_from_root);
             var rightOutcome = this.right.tryUpdateResponses(responses_from_root);
             return leftOutcome && rightOutcome;
@@ -245,8 +282,9 @@ public class BTreeNode {
     /**
      * Return the list of features that can be used to split data at this node
      * */
-    ArrayList<Integer> getPredictorsThatCouldBeUsedToSplitAtNode() {
+    Pair<ArrayList<Integer>, Integer> getPredictorsThatCouldBeUsedToSplitAtNode() {
         var possible_rule_variables = new ArrayList<Integer>();
+        var num_possible_rules = 0;
         var X_by_col = this.dataContext.XByColumn;
         var num_features = X_by_col.length;
         for (int j = 0; j < num_features; j++){
@@ -255,11 +293,12 @@ public class BTreeNode {
             for (int i = 1; i < dataIndices.length; i++) {
                 if (x_dot_j[dataIndices[i - 1]] != x_dot_j[dataIndices[i]]){
                     possible_rule_variables.add(j);
+                    num_possible_rules++;
                     break;
                 }
             }
         }
-        return possible_rule_variables;
+        return new Pair<>(possible_rule_variables, num_possible_rules);
     }
 
     /**
@@ -349,7 +388,7 @@ public class BTreeNode {
 
         var n_eta = this.dataIndices.length;
         var avgResponse = this.avgResponse();
-        var response_variation = this.responseVariation();
+        var response_variation = this.responseVariation(avgResponse);
         var log_likelihood =
                 -n_eta/2.*Math.log(2*Math.PI*σ_sq) +
                         0.5*Math.log(σ_sq/(σ_sq+n_eta*σ_mu_sq)) +
@@ -403,8 +442,7 @@ public class BTreeNode {
         return StatToolbox.sample_average(this.responses);
     }
 
-    private double responseVariation() { // not variance!
-        var avg_response = this.avgResponse();
+    private double responseVariation(double avg_response) { // not variance!
         var variation = Arrays.stream(this.responses).map(r -> Math.pow((r-avg_response),2)).sum();
         return variation;
     }

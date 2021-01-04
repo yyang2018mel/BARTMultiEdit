@@ -23,14 +23,14 @@ public class BTreeEdit {
         //a) If there is no nodes to grow, return null
         //b) If the node we picked CANNOT grow due to no available predictors, return null as well
 
-        //do check a
-        if (growth_nodes.size() == 0)
+        BTreeNode growth_node;
+        try {
+            growth_node = growth_nodes.get((int)Math.floor(rand.nextDouble() * growth_nodes.size()));
+        }
+        catch (IndexOutOfBoundsException e) {
             return null;
+        }
 
-        //now we pick one of these nodes with enough data points randomly
-        BTreeNode growth_node = growth_nodes.get((int)Math.floor(rand.nextDouble() * growth_nodes.size()));
-
-        //do check b
         if (growth_node.predictorsAvailable.length == 0){
             return null;
         }
@@ -48,11 +48,12 @@ public class BTreeEdit {
         }
 
         var prunable_and_changeable_nodes = root.getPrunableAndChangeablesBelowInclusive();
-        if (prunable_and_changeable_nodes.size() == 0){
+        var num_prunable_and_changeable_nodes = prunable_and_changeable_nodes.size();
+        if (num_prunable_and_changeable_nodes == 0){
             return null;
         }
 
-        var picked_node = prunable_and_changeable_nodes.get((int)Math.floor(rand.nextDouble() * prunable_and_changeable_nodes.size()));
+        var picked_node = prunable_and_changeable_nodes.get((int)Math.floor(rand.nextDouble() * num_prunable_and_changeable_nodes));
         //now we pick one of these nodes randomly
         return picked_node;
     }
