@@ -204,7 +204,8 @@ public class BTreeNode {
                 splitsAvailable.put(predictor, this.getPossibleSplitsOfPredictorAtNode(predictor));
         }
 
-        if(left_indices.size() > 0 && right_indices.size() > 0) {
+        if(left_size > 0 && right_size > 0) {
+            this.left.depth = this.depth + 1;
             this.left.dataIndices = new int[left_size];
             this.left.responses = new double[left_size];
             for(int i = 0; i < left_size; i++) {
@@ -213,6 +214,7 @@ public class BTreeNode {
                 this.left.responses[i] = responses_from_root[idx];
             }
 
+            this.right.depth = this.depth + 1;
             this.right.dataIndices = new int[right_size];
             this.right.responses = new double[right_size];
             for(int i = 0; i < right_size; i++) {
