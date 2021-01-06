@@ -4,8 +4,8 @@ import java.util.ArrayList;
 
 public class BTreeProb {
 
-    static double getTreeStructureLogProbability(BTreeNode root) {
-        var tree_terminals = root.getTerminalsBelowInclusive();
+    static double getTreeStructureLogProbability(BTreeNode root, ArrayList<BTreeNode> terminals) {
+        var tree_terminals = terminals;
         var tree_internals = root.getNonTerminalsBelowInclusive();
 
         var sum_terminals_log_prob_split = 0.;
@@ -50,25 +50,27 @@ public class BTreeProb {
         return log_prob;
     }
 
-    static double getTreeLogLikelihood(BTreeNode root, double σ_sq, double σ_mu_sq) {
-        var terminals = root.getTerminalsBelowInclusive();
+    static double getTreeLogLikelihood(BTreeNode root, ArrayList<BTreeNode> terminals, double σ_sq, double σ_mu_sq) {
         var log_likelihood = 0.;
         for(var t : terminals)
             log_likelihood += t.calcTerminalLogLikelihood(σ_sq, σ_mu_sq);
         return log_likelihood;
     }
 
-    static double getTreeStructureLogRatio(BTreeNode proposal_tree, BTreeNode current_tree) {
-        var current_tree_structure_logprob = getTreeStructureLogProbability(current_tree);
-        var proposal_tree_structure_logprob = getTreeStructureLogProbability(proposal_tree);
+    static double getTreeStructureLogRatio(BTreeNode proposal_tree, ArrayList<BTreeNode> proposal_terminals,
+                                           BTreeNode current_tree, ArrayList<BTreeNode> current_terminals) {
+        var current_tree_structure_logprob = getTreeStructureLogProbability(current_tree, current_terminals);
+        var proposal_tree_structure_logprob = getTreeStructureLogProbability(proposal_tree, proposal_terminals);
         var ratio = proposal_tree_structure_logprob - current_tree_structure_logprob;
 
         return ratio;
     }
 
-    static double getTreeLogLikelihoodRatio(BTreeNode proposal_tree, BTreeNode current_tree, double σ_sq, double σ_mu_sq) {
-        var current_log_likelihood = getTreeLogLikelihood(current_tree, σ_sq, σ_mu_sq);
-        var proposal_log_likelihood = getTreeLogLikelihood(proposal_tree, σ_sq, σ_mu_sq);
+    static double getTreeLogLikelihoodRatio(BTreeNode proposal_tree, ArrayList<BTreeNode> proposal_terminals,
+                                            BTreeNode current_tree, ArrayList<BTreeNode> current_terminals,
+                                            double σ_sq, double σ_mu_sq) {
+        var current_log_likelihood = getTreeLogLikelihood(current_tree, current_terminals, σ_sq, σ_mu_sq);
+        var proposal_log_likelihood = getTreeLogLikelihood(proposal_tree, proposal_terminals, σ_sq, σ_mu_sq);
         var ratio = proposal_log_likelihood - current_log_likelihood;
         return ratio;
     }

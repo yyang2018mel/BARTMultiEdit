@@ -162,11 +162,11 @@ public class BTreeEdit {
         return new Pair<>(proposal_tree, log_forward_backward);
     }
 
-    static Pair<BTreeNode, double[]> performMultiStepRandomWalk(Random rand, BTreeNode current_tree_cached, BTreeNode proposal_tree, double mean_stride, double[] responses) {
+    static Pair<BTreeNode, double[]> performMultiStepRandomWalk(Random rand, PoissonSampler poisson, BTreeNode current_tree_cached, BTreeNode proposal_tree, double mean_stride, double[] responses) {
         var log_forward_backward = new double[2];
         var current_tree = current_tree_cached.clone();
 
-        var stride = StatToolbox.sample_poisson(mean_stride);
+        var stride = poisson.sample();
         var edits = "";
 
         for (int i = 0; i < stride; i++) {

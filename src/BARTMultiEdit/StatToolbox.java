@@ -4,6 +4,24 @@ import java.util.Random;
 
 import static OpenSourceExtensions.StatUtil.refine;
 import org.apache.commons.math3.distribution.PoissonDistribution;
+import org.apache.commons.math3.random.AbstractRandomGenerator;
+import org.apache.commons.math3.random.RandomGenerator;
+
+class PoissonSampler {
+
+    double mean;
+    PoissonDistribution poisson;
+
+    PoissonSampler(int seed, double mean) {
+        this.mean = mean;
+        this.poisson = new PoissonDistribution(mean);
+        this.poisson.reseedRandomGenerator(seed);
+    }
+
+    int sample() {
+        return this.poisson.sample();
+    }
+}
 
 public class StatToolbox {
     /* ********************************************
@@ -201,6 +219,7 @@ public class StatToolbox {
 
     public static int sample_poisson(double mean) {
         var poisson = new PoissonDistribution(mean);
+
         return poisson.sample();
     }
 

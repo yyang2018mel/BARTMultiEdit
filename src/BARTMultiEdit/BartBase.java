@@ -11,6 +11,7 @@ public abstract class BartBase {
     Hyperparam hyperParam;
     DataContext dataContext;
     Random rand;
+    PoissonSampler poisson;
 
     int currentGibbsIteration;
     BTreeNode[][] gibbsSamplesOfTrees;
@@ -23,6 +24,7 @@ public abstract class BartBase {
         this.hyperParam = hyperParam;
         this.dataContext = dataContext;
         this.rand = new Random(hyperParam.seed);
+        this.poisson = new PoissonSampler(hyperParam.seed, hyperParam.meanStride);
         this.currentGibbsIteration = 0;
         this.gibbsSamplesOfTrees = new BTreeNode[hyperParam.numGibbsTotal+1][hyperParam.T];
         this.gibbsSamplesOfSigmaSq = new double[hyperParam.numGibbsTotal+1];
@@ -86,7 +88,7 @@ public abstract class BartBase {
         var proposal =
             switch (hyperParam.mhMode) {
                 case OneStep -> BTreeEdit.performOneStepRandomWalk(rand, old_tree, proposal_tree, R_minus_j);
-                case MultiStep -> BTreeEdit.performMultiStepRandomWalk(rand, old_tree, proposal_tree, hyperParam.meanStride, R_minus_j); // to be implemented
+                case MultiStep -> BTreeEdit.performMultiStepRandomWalk(rand, this.poisson, old_tree, proposal_tree, hyperParam.meanStride, R_minus_j); // to be implemented
             };
 
         proposal_tree = proposal.getValue0();
@@ -94,8 +96,16 @@ public abstract class BartBase {
         var log_transition_ratio = log_forward_backward[1] - log_forward_backward[0];
 
         if(proposal_tree != null && proposal_tree.tryUpdateResponses(R_minus_j)) {
-            var log_likelihood_ratio = BTreeProb.getTreeLogLikelihoodRatio(proposal_tree, old_tree, σ_sq, hyperParam.σ_mu_sq);
-            var log_structure_ratio = BTreeProb.getTreeStructureLogRatio(proposal_tree, old_tree);
+
+            var proposal_tree_terminals = proposal_tree.getTerminalsBelowInclusive();
+            var old_tree_terminals = old_tree.getTerminalsBelowInclusive();
+
+            var log_likelihood_ratio =
+                BTreeProb.getTreeLogLikelihoodRatio(proposal_tree, proposal_tree_terminals, old_tree, old_tree_terminals, σ_sq, hyperParam.σ_mu_sq);
+
+            var log_structure_ratio =
+                BTreeProb.getTreeStructureLogRatio(proposal_tree, proposal_tree_terminals, old_tree, old_tree_terminals);
+
             var log_metropolis_ratio = log_likelihood_ratio + log_transition_ratio + log_structure_ratio;
             var log_u_0_1 = Math.log(rand.nextDouble());
 
@@ -127,8 +137,13 @@ public abstract class BartBase {
         // we need to replace the prediction of the j-th tree from previous iteration with the ones from this iteration
         // (they can be the same between iterations, e.g. when the proposal tree is rejected
         // technically, we pull 'pred_j_old' out from sum_estimates_vec and plug 'pred_j_new' in
-        sumEstimatesVector = VectorTools.subtract_arrays(sumEstimatesVector, pred_j_old);
-        sumEstimatesVector = VectorTools.add_arrays(sumEstimatesVector, pred_j_new);
+
+//        sumEstimatesVector = VectorTools.subtract_arrays(sumEstimatesVector, pred_j_old);
+//        sumEstimatesVector = VectorTools.add_arrays(sumEstimatesVector, pred_j_new);
+
+        for(int i = 0; i < sumEstimatesVector.length; i++)
+            sumEstimatesVector[i] = sumEstimatesVector[i] - pred_j_old[i] + pred_j_new[i];
+
         gibbsSamplesOfTrees[gibbs_iter][tree_idx] = sampled_tree;
 
         var residual = VectorTools.subtract_arrays(dataContext.yTransformed, sumEstimatesVector);
