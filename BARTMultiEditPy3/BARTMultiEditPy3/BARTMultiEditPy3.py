@@ -27,7 +27,7 @@ class BARTRegression(BaseEstimator, RegressorMixin):
         self.gibbs_rounds = gibbs_rounds
         self.burn_in = burn_in
         self.mh_mode = mh_mode
-        mh_mode_to_java = mh_mode.value
+        self.mh_mode_to_java = mh_mode.value
         self.alpha = alpha
         self.beta = beta
         self.k = k
@@ -38,9 +38,8 @@ class BARTRegression(BaseEstimator, RegressorMixin):
         self.seed = seed
         self.mean_stride = mean_stride
         self.verbose = verbose
-        verbose_to_jave = verbose.value
-        self.hyperParam = Hyperparam(seed, T, gibbs_rounds, burn_in, mh_mode_to_java, mean_stride,
-                                     False, alpha, beta, k, nu, q, prob_grow, prob_prune, verbose_to_jave)
+        self.verbose_to_java = verbose.value
+        self.hyperParam = None
         self.X_ = None
         self.y_ = None
         self.data_context = None
@@ -53,6 +52,8 @@ class BARTRegression(BaseEstimator, RegressorMixin):
         self.y_ = y
         jX = JArray.of(X)
         jy = JArray.of(y)
+        self.hyperParam = Hyperparam(self.seed, self.T, self.gibbs_rounds, self.burn_in, self.mh_mode_to_java, self.mean_stride,
+                                     False, self.alpha, self.beta, self.k, self.nu, self.q, self.prob_grow, self.prob_prune, self.verbose_to_java)
         self.data_context = DataContext(jX, jy, True)
         self.bart_model = BartRegression(self.hyperParam, self.data_context)
         self.bart_model.initialize()
