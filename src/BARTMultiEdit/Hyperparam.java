@@ -7,9 +7,30 @@ import java.util.Random;
 
 public class Hyperparam {
 
-    public enum MHMode { OneStep, MultiStep }
+    public enum MHMode {
+        OneStep, MultiStep;
 
-    public enum VerboseLevel { NoReporting, ReportLoss, ReportDetails}
+        public static MHMode fromInteger(int x) {
+            switch(x) {
+                case 0: return OneStep;
+                case 1: return MultiStep;
+            }
+            return null;
+        }
+    }
+
+    public enum VerboseLevel {
+        NoReporting, ReportLoss, ReportDetails;
+
+        public static VerboseLevel fromInteger(int x) {
+            switch (x) {
+                case 0: return NoReporting;
+                case 1: return ReportLoss;
+                case 2: return ReportDetails;
+            }
+            return null;
+        }
+    }
 
     /** random seed */
     protected final int seed;
@@ -68,6 +89,26 @@ public class Hyperparam {
         this.probGrow = prob_insert;
         this.probPrune = prob_delete;
         this.verbose = verbose;
+    }
+
+    public Hyperparam(int seed, int T, int num_gibbs_total, int num_gibbs_burnin, int mhMode,
+                      double meanStride, boolean classification, double alpha, double beta, double k, double nu, double q,
+                      double prob_insert, double prob_delete, int verbose) {
+        this.seed = seed;
+        this.T = T;
+        this.numGibbsTotal = num_gibbs_total;
+        this.numGibbsBurnin = num_gibbs_burnin;
+        this.mhMode = MHMode.fromInteger(mhMode);
+        this.meanStride = meanStride;
+        this.isClassification = classification;
+        this.alpha = alpha;
+        this.beta = beta;
+        this.k = k;
+        this.nu = nu;
+        this.q = q;
+        this.probGrow = prob_insert;
+        this.probPrune = prob_delete;
+        this.verbose = VerboseLevel.fromInteger(verbose);
     }
 
     private void calculateSigmaMu() {

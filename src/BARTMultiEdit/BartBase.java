@@ -1,7 +1,7 @@
 package BARTMultiEdit;
 
-import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 
+import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Random;
@@ -40,7 +40,7 @@ public abstract class BartBase {
         this.sumEstimatesVector = new double[dataContext.N]; // with default value 0.
     }
 
-    public void doGibbsSampling(){
+    public void doGibbsSampling() {
         var start_time = Instant.now();
         while (currentGibbsIteration <= hyperParam.numGibbsTotal){
             doOneGibbsSampling();
@@ -53,7 +53,6 @@ public abstract class BartBase {
                     System.out.printf("Iteration: %d\tInSample Loss: %2f%n", currentGibbsIteration, loss_so_far);
                 }
             }
-
             currentGibbsIteration++;
         }
         var end_time = Instant.now();
@@ -62,6 +61,7 @@ public abstract class BartBase {
         var loss = this.getInSampleLossToCurrentIteration();
         System.out.printf("InSample Loss:  %2f%n", loss);
         System.out.printf("Total Gibbs sampling time: %d seconds%n", training_duration);
+
     }
 
     abstract void initializeSigmaSq();
