@@ -2,6 +2,14 @@ package BARTMultiEdit;
 
 import java.util.ArrayList;
 
+interface BTreeGrowProbModel {
+    double calculate(BTreeNode tree);
+}
+
+interface BTreePruneProbModel {
+    double calculate(BTreeNode tree);
+}
+
 public class BTreeProb {
 
     static double getTreeStructureLogProbability(BTreeNode root, ArrayList<BTreeNode> terminals) {
@@ -26,17 +34,33 @@ public class BTreeProb {
         return sum_current_log_probs;
     }
 
-    static double calculateLogGrowProbability(BTreeNode tree_grown_from, BTreeNode grow_node) {
+//    static double calculateLogGrowProbability(BTreeNode tree_grown_from, BTreeNode grow_node, BTreeGrowProbModel prob_grow_model) {
+//        int b = tree_grown_from.getTerminalsBelowInclusive().size();
+//        double prob_grow = tree_grown_from.IsStump() ? 1. : tree_grown_from.bartParams.probGrow;
+//        double p_adj = grow_node.predictorsAvailable.length;
+//        double n_adj = grow_node.splitsAvailable.get(grow_node.decision.featureIndex).length;
+//        double log_prob = 4.*Math.log(1.) - Math.log(prob_grow) - Math.log(b) -Math.log(p_adj) - Math.log(n_adj);
+//        return log_prob;
+//    }
+
+    static double calculateLogGrowProbability(BTreeNode tree_grown_from, BTreeNode grow_node, BTreeGrowProbModel prob_model) {
         int b = tree_grown_from.getTerminalsBelowInclusive().size();
-        double prob_grow = tree_grown_from.IsStump() ? 1. : tree_grown_from.bartParams.probGrow;
+        double prob_grow = prob_model.calculate(tree_grown_from);
         double p_adj = grow_node.predictorsAvailable.length;
         double n_adj = grow_node.splitsAvailable.get(grow_node.decision.featureIndex).length;
         double log_prob = 4.*Math.log(1.) - Math.log(prob_grow) - Math.log(b) -Math.log(p_adj) - Math.log(n_adj);
         return log_prob;
     }
 
-    static double calculateLogPruneProbability(BTreeNode tree_pruned_from) {
-        double prob_prune = tree_pruned_from.IsStump() ? 0. : tree_pruned_from.bartParams.probPrune;
+//    static double calculateLogPruneProbability(BTreeNode tree_pruned_from) {
+//        double prob_prune = tree_pruned_from.IsStump() ? 0. : tree_pruned_from.bartParams.probPrune;
+//        var num_prunable = tree_pruned_from.getPrunableAndChangeablesBelowInclusive().size();
+//        double log_prob = 2.*Math.log(1.) - Math.log(prob_prune) - Math.log(num_prunable);
+//        return log_prob;
+//    }
+
+    static double calculateLogPruneProbability(BTreeNode tree_pruned_from, BTreePruneProbModel prob_model) {
+        double prob_prune = prob_model.calculate(tree_pruned_from);
         var num_prunable = tree_pruned_from.getPrunableAndChangeablesBelowInclusive().size();
         double log_prob = 2.*Math.log(1.) - Math.log(prob_prune) - Math.log(num_prunable);
         return log_prob;

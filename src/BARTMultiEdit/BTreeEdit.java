@@ -58,7 +58,7 @@ public class BTreeEdit {
         return picked_node;
     }
 
-    static double[] doMHGrowAndCalculateLogProbs(Random rand, BTreeNode current_tree_cached, BTreeNode proposal_tree, double prob_grow, double prob_prune, double[] responses) {
+    static double[] doMHGrowAndCalculateLogProbs(Random rand, BTreeNode current_tree_cached, BTreeNode proposal_tree, BTreeGrowProbModel prob_grow_model, BTreePruneProbModel prob_prune_model, double[] responses) {
         //first select a node that can be grown
         var grow_node = pickGrowNode(rand, proposal_tree);
         var void_result = new double[] { Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY };
@@ -82,8 +82,8 @@ public class BTreeEdit {
         grow_node.left = new BTreeNode(grow_node); // make as terminal node
         grow_node.right = new BTreeNode(grow_node); // make as terminal node
         if (grow_node.tryPopulateDataAndDepth(responses)) {
-            double log_forward_prob = BTreeProb.calculateLogGrowProbability(current_tree_cached, grow_node);
-            double log_backward_prob = BTreeProb.calculateLogPruneProbability(proposal_tree);
+            double log_forward_prob = BTreeProb.calculateLogGrowProbability(current_tree_cached, grow_node, prob_grow_model);
+            double log_backward_prob = BTreeProb.calculateLogPruneProbability(proposal_tree, prob_prune_model);
             return new double[] {log_forward_prob, log_backward_prob};
         }
         return void_result;
@@ -117,7 +117,7 @@ public class BTreeEdit {
         return void_result;
     }
 
-    static double[] doMHPruneAndCalculateLnR(Random rand, BTreeNode current_tree_cached, BTreeNode proposal_tree, double prob_grow, double prob_prune, double[] responses) {
+    static double[] doMHPruneAndCalculateLnR(Random rand, BTreeNode current_tree_cached, BTreeNode proposal_tree, BTreeGrowProbModel prob_grow_model, BTreePruneProbModel prob_prune_model, double[] responses) {
         // first select a node that can be pruned
         var prune_node = pickPruneOrChangeNode(rand, proposal_tree);
         var prune_node_cached = prune_node.clone();
@@ -127,8 +127,8 @@ public class BTreeEdit {
         // do the pruning
         prune_node.descendToTerminalNode();
         if (prune_node.tryPopulateDataAndDepth(responses)) {
-            double log_forward_prob = BTreeProb.calculateLogPruneProbability(current_tree_cached);
-            double log_backward_prob = BTreeProb.calculateLogGrowProbability(proposal_tree, prune_node_cached);
+            double log_forward_prob = BTreeProb.calculateLogPruneProbability(current_tree_cached, prob_prune_model);
+            double log_backward_prob = BTreeProb.calculateLogGrowProbability(proposal_tree, prune_node_cached, prob_grow_model);
             return new double[] {log_forward_prob, log_backward_prob};
         }
 
@@ -141,18 +141,23 @@ public class BTreeEdit {
 
         // 1. randomly choose an Edit step based on unconditional probability of Edits
         var bartParams = current_tree_cached.bartParams;
-        var prob_grow = current_tree_cached.IsStump() ? 1. : bartParams.probGrow;
-        var prob_prune = current_tree_cached.IsStump()? 0. : bartParams.probPrune;
+
+        BTreeGrowProbModel grow_prob_model = (tree) -> tree.IsStump() ? 1. : bartParams.probGrow;
+        BTreePruneProbModel prune_prob_model = (tree) -> tree.IsStump() ? 0. : bartParams.probPrune;
+
+        var prob_grow = grow_prob_model.calculate(current_tree_cached);
+        var prob_prune = prune_prob_model.calculate(current_tree_cached);
         var prob_change = 1. - (prob_grow + prob_prune);
+
         var edit_step_chosen = randomlyPickAProposalEdit(rand, prob_grow, prob_prune);
 
         // 2. do one edit
         switch (edit_step_chosen) {
             case Grow:
-                log_forward_backward = doMHGrowAndCalculateLogProbs(rand, current_tree_cached, proposal_tree, prob_grow, prob_prune, responses);
+                log_forward_backward = doMHGrowAndCalculateLogProbs(rand, current_tree_cached, proposal_tree, grow_prob_model, prune_prob_model, responses);
                 break;
             case Prune:
-                log_forward_backward = doMHPruneAndCalculateLnR(rand, current_tree_cached, proposal_tree, prob_grow, prob_prune, responses);
+                log_forward_backward = doMHPruneAndCalculateLnR(rand, current_tree_cached, proposal_tree, grow_prob_model, prune_prob_model, responses);
                 break;
             case Change:
                 log_forward_backward = doMHChangeAndCalculateLnR(rand, current_tree_cached, proposal_tree, prob_change, responses);
